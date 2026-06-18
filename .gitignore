@@ -1,0 +1,13 @@
+# Secretos / configuración local (contiene tu API key y contraseña)
+config.json
+
+# Dependencias
+node_modules/
+
+# Capturas y artefactos temporales
+preview*.png
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db

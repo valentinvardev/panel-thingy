@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SMM World — Panel de API</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c2230;
+    --border: #2b3340;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #3b82f6;
+    --accent-2: #2563eb;
+    --ok: #3fb950;
+    --err: #f85149;
+    --radius: 12px;
+    /* Color por tipo de orden — se reutiliza en iconos, badges y selects */
+    --c-comments: #a371f7;
+    --c-likes: #58a6ff;
+    --c-saves: #3fb950;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Satoshi", "Segoe UI", system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(900px 500px at 85% -5%, rgba(163,113,247,.10), transparent 60%),
+      radial-gradient(1200px 600px at 12% -10%, #18202c, var(--bg));
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 32px 20px 80px; }
+  header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .logo {
+    width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--c-comments), var(--accent));
+    box-shadow: 0 6px 20px rgba(59,130,246,.35); flex: 0 0 auto;
+  }
+  .brand .logo svg { width: 22px; height: 22px; color: #fff; }
+  header h1 { font-size: 26px; font-weight: 900; margin: 0; letter-spacing: -.6px; }
+  header p { color: var(--muted); margin: 0; font-size: 14px; }
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .4px;
+    text-transform: uppercase; color: var(--ok); border: 1px solid var(--ok);
+    border-radius: 999px; padding: 2px 10px; margin-left: 8px; vertical-align: middle;
+  }
+  .tag.warn { color: #f0a000; border-color: #f0a000; }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 18px;
+  }
+  .card h2 { font-size: 15px; font-weight: 700; letter-spacing: -.2px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+  .ic {
+    width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto;
+    display: grid; place-items: center; color: var(--muted);
+    background: var(--panel-2); border: 1px solid var(--border);
+    transition: transform .2s ease;
+  }
+  .ic svg { width: 17px; height: 17px; }
+  .card:hover h2 .ic { transform: translateY(-1px) scale(1.05); }
+  .ic.comments { color: var(--c-comments); background: rgba(163,113,247,.14); border-color: rgba(163,113,247,.4); }
+  .ic.likes    { color: var(--c-likes);    background: rgba(88,166,255,.14);  border-color: rgba(88,166,255,.4); }
+  .ic.saves    { color: var(--c-saves);    background: rgba(63,185,80,.14);   border-color: rgba(63,185,80,.4); }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+  input, select, textarea {
+    width: 100%; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+    font-size: 14px; font-family: inherit; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .row > div { flex: 1; min-width: 160px; }
+  button {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: background .15s, transform .12s, box-shadow .15s; white-space: nowrap;
+  }
+  button:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37,99,235,.3); }
+  button:active { transform: translateY(0); box-shadow: none; }
+  button .bi { width: 15px; height: 15px; vertical-align: -3px; margin-right: 6px; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  button.ghost:hover { background: var(--panel-2); }
+  button:disabled { opacity: .5; cursor: default; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .out {
+    margin-top: 14px; background: #0b0e13; border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; font-family: ui-monospace, "Cascadia Code", monospace;
+    font-size: 13px; white-space: pre-wrap; word-break: break-word; min-height: 20px;
+  }
+  .out.err { border-color: var(--err); color: #ffb4ae; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--panel); }
+  td.id { font-family: ui-monospace, monospace; color: var(--accent); }
+  .scroll { max-height: 420px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; }
+  .spinner { color: var(--muted); }
+  .keyrow { display: flex; gap: 10px; align-items: flex-end; }
+  .keyrow > div { flex: 1; }
+  .note {
+    font-size: 12px; color: var(--muted); border-left: 2px solid var(--border);
+    padding-left: 12px; margin-top: 16px;
+  }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .chip {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .chip:hover { color: var(--text); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Layout de dos columnas */
+  .layout { display: flex; gap: 18px; align-items: flex-start; }
+  main { flex: 1; min-width: 0; }
+  .side { flex: 0 0 320px; position: sticky; top: 20px; }
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .side { flex: 1 1 auto; width: 100%; position: static; }
+  }
+
+  /* Lista de órdenes recientes */
+  .recent { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow: auto; }
+  .recent .empty { color: var(--muted); font-size: 13px; padding: 8px 2px; }
+  .ritem {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-size: 13px;
+  }
+  .ritem.failing { border-color: var(--err); background: #2a1416; }
+  .rtop { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .rtype {
+    font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+    border-radius: 6px; padding: 2px 7px; color: #fff;
+  }
+  .rtype.comments { background: var(--c-comments); }
+  .rtype.likes { background: var(--c-likes); color: #06210e; }
+  .rtype.saves { background: var(--c-saves); color: #06210e; }
+  .rwhen { color: var(--muted); font-size: 11px; margin-left: auto; }
+  .rbody { color: var(--text); }
+  .rbody b { color: var(--accent); }
+  .rorder { color: var(--muted); font-size: 12px; margin-top: 2px; word-break: break-all; }
+  .ractions { display: flex; gap: 6px; margin-top: 8px; }
+  .mk {
+    flex: 1; padding: 5px 0; font-size: 13px; font-weight: 700; border-radius: 7px;
+    background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: pointer;
+  }
+  .mk:hover { color: var(--text); }
+  .mk.ok.active { background: var(--ok); border-color: var(--ok); color: #06210e; }
+  .mk.no.active { background: var(--err); border-color: var(--err); color: #2a0a08; }
+  .svc-warn { color: #ffb4ae; font-size: 12px; margin-top: 8px; display: none; }
+
+  /* Modal de confirmación */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(2px);
+    display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    max-width: 440px; width: 100%; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .modal h3 { margin: 0 0 10px; font-size: 17px; }
+  .modal .modal-body { color: var(--muted); font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+  .modal .modal-body b { color: var(--text); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+  .modal-actions button { min-width: 110px; }
+  button.danger { background: var(--err); }
+  button.danger:hover { background: #d23b32; box-shadow: 0 6px 16px rgba(248,81,73,.3); }
+
+  /* Animaciones */
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes pop  { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes slidein { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+  main .card, .side .card { animation: rise .5s cubic-bezier(.22,.61,.36,1) both; }
+  main .card:nth-child(1) { animation-delay: .03s; }
+  main .card:nth-child(2) { animation-delay: .08s; }
+  main .card:nth-child(3) { animation-delay: .13s; }
+  main .card:nth-child(4) { animation-delay: .18s; }
+  main .card:nth-child(5) { animation-delay: .23s; }
+  main .card:nth-child(6) { animation-delay: .28s; }
+  main .card:nth-child(7) { animation-delay: .33s; }
+  main .card:nth-child(8) { animation-delay: .38s; }
+  .side .card { animation-delay: .2s; }
+  .modal-overlay.show .modal { animation: pop .22s cubic-bezier(.22,.61,.36,1) both; }
+  .ritem { animation: slidein .3s ease both; }
+  .out, .svc-warn { transition: border-color .2s, color .2s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+      </span>
+      <div>
+        <h1>SMM World <span class="tag warn">coloca órdenes</span></h1>
+        <p>Panel de API · comentarios, likes y saves</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+  <main>
+
+  <!-- API KEY -->
+  <div class="card">
+    <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg></span> API Key</h2>
+    <div class="keyrow">
+      <div>
+        <label for="apikey">Tu key (Account page de SMM World)</label>
+        <input id="apikey" type="password" placeholder="pega tu API key aquí" autocomplete="off" />
+      </div>
+      <button class="ghost" id="toggleKey" type="button">Ver</button>
+      <button id="saveKey" type="button">Guardar</button>
+    </div>
+    <div class="hint">Se guarda solo en este navegador (localStorage). Nunca sale de tu equipo salvo hacia la API de SMM World.</div>
+  </div>
+
+  <!-- BALANCE -->
+  <div class="card">
+    <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></span> Balance</h2>
+    <button id="btnBalance" type="button">Consultar balance</button>
+    <div class="out" id="outBalance">—</div>
+  </div>
+
+  <!-- SERVICES -->
+  <div class="card">
+    <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span> Servicios</h2>
+    <div class="row">
+      <button id="btnServices" type="button">Cargar catálogo</button>
+      <div>
+        <input id="filter" type="text" placeholder="Filtrar por nombre, categoría o ID (ej: 21472)" />
+      </div>
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip active" data-group="all" type="button">Todos</button>
+      <button class="chip" data-group="likes" type="button">Likes (21472–21477)</button>
+      <button class="chip" data-group="saves" type="button">Saves (20374–20375)</button>
+      <button class="chip" data-group="comments" type="button">Comentarios (20744–20746)</button>
+    </div>
+    <div class="hint" id="svcCount"></div>
+    <div class="scroll" id="svcWrap" style="display:none">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Nombre</th><th>Categoría</th><th>Tipo</th><th>Rate</th><th>Min</th><th>Max</th></tr>
+        </thead>
+        <tbody id="svcBody"></tbody>
+      </table>
+    </div>
+    <div class="out err" id="outServices" style="display:none"></div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="card">
+    <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span> Estado de orden</h2>
+    <div class="row">
+      <div>
+        <label for="orderIds">ID(s) de orden — separa con coma para varias (hasta 100)</label>
+        <input id="orderIds" type="text" placeholder="ej: 23501  ó  23501,23502,23503" />
+      </div>
+      <button id="btnStatus" type="button">Consultar estado</button>
+    </div>
+    <div class="out" id="outStatus">—</div>
+  </div>
+
+  <!-- ENLACE COMÚN -->
+  <div class="card">
+    <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span> Enlace del post (común)</h2>
+    <label for="orderLink">Se usa para comentarios, likes y saves</label>
+    <input id="orderLink" type="text" placeholder="https://www.instagram.com/p/..." />
+    <div class="hint">Se guarda en este navegador (localStorage) y se rellena solo al recargar.</div>
+  </div>
+
+  <!-- COMENTARIOS -->
+  <div class="card">
+    <h2><span class="ic comments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Comentarios personalizados</h2>
+    <div class="row">
+      <div>
+        <label for="cmtService">Servicio</label>
+        <select id="cmtService"></select>
+      </div>
+    </div>
+    <label for="cmtLists" style="margin-top:14px">Listas guardadas</label>
+    <div class="row">
+      <div>
+        <select id="cmtLists"><option value="">— ninguna —</option></select>
+      </div>
+      <button class="ghost" id="btnLoadList" type="button">Cargar</button>
+      <button class="ghost" id="btnDeleteList" type="button">Borrar</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label for="cmtListName">Título para guardar la lista actual</label>
+        <input id="cmtListName" type="text" placeholder="ej: Comentarios genéricos ES" />
+      </div>
+      <button id="btnSaveList" type="button">Guardar lista</button>
+    </div>
+    <label for="cmtText" style="margin-top:14px">Comentarios — uno por línea</label>
+    <textarea id="cmtText" rows="6" placeholder="Un comentario por línea&#10;Otro comentario&#10;Me encanta 🔥"></textarea>
+    <div class="row" style="margin-top:12px; align-items:center;">
+      <button id="btnComments" type="button"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>Enviar comentarios</button>
+      <div class="hint" id="cmtCount" style="flex:1">0 comentarios</div>
+    </div>
+    <div class="out" id="outComments">—</div>
+  </div>
+
+  <!-- LIKES -->
+  <div class="card">
+    <h2><span class="ic likes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span> Likes</h2>
+    <div class="row">
+      <div>
+        <label for="likeService">Servicio</label>
+        <select id="likeService"></select>
+      </div>
+      <div style="flex:0 0 140px">
+        <label for="likeQty">Cantidad</label>
+        <input id="likeQty" type="number" min="1" step="1" value="1422" />
+      </div>
+      <button id="btnLikes" type="button"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>Enviar likes</button>
+    </div>
+    <div class="out" id="outLikes">—</div>
+  </div>
+
+  <!-- SAVES -->
+  <div class="card">
+    <h2><span class="ic saves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span> Saves</h2>
+    <div class="row">
+      <div>
+        <label for="saveService">Servicio</label>
+        <select id="saveService"></select>
+      </div>
+      <div style="flex:0 0 140px">
+        <label for="saveQty">Cantidad</label>
+        <input id="saveQty" type="number" min="1" step="1" value="173" />
+      </div>
+      <button id="btnSaves" type="button"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>Enviar saves</button>
+    </div>
+    <div class="out" id="outSaves">—</div>
+  </div>
+
+  <div class="note">
+    Consulta: <b>balance</b>, <b>services</b>, <b>status</b>.
+    Colocación de órdenes: <b>add</b> (comentarios, likes, saves) — consume tu balance real.
+    El servidor (server.js) rechaza cualquier otra acción.
+  </div>
+  </main>
+
+  <aside class="side">
+    <div class="card">
+      <h2 style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:10px">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>
+          Órdenes recientes
+        </span>
+        <button class="ghost" id="btnClearRecent" type="button" style="padding:4px 10px;font-size:12px">Limpiar</button>
+      </h2>
+      <div class="hint">Marca ✓ si la orden funcionó o ✗ si no. Un servicio marcado ✗ se resalta en rojo durante 24 h.</div>
+      <div class="recent" id="recentList"></div>
+    </div>
+  </aside>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="modalTitle">Confirmar</h3>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="ghost" id="modalCancel" type="button">Cancelar</button>
+      <button id="modalOk" type="button">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const KEY_STORE = "smmworld_api_key";
+
+// --- API key ---
+const keyInput = $("apikey");
+keyInput.value = localStorage.getItem(KEY_STORE) || "";
+$("saveKey").onclick = () => {
+  localStorage.setItem(KEY_STORE, keyInput.value.trim());
+  flash($("saveKey"), "Guardada ✓");
+};
+$("toggleKey").onclick = () => {
+  keyInput.type = keyInput.type === "password" ? "text" : "password";
+  $("toggleKey").textContent = keyInput.type === "password" ? "Ver" : "Ocultar";
+};
+function flash(btn, text) {
+  const old = btn.textContent;
+  btn.textContent = text;
+  setTimeout(() => (btn.textContent = old), 1200);
+}
+function getKey() {
+  // Puede ir vacía: si el servidor tiene la key en config.json, la usa él.
+  return keyInput.value.trim();
+}
+
+// --- Llamada al proxy ---
+async function call(params) {
+  const res = await fetch("/proxy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  if (!res.ok) {
+    const msg = (data && data.error) ? data.error : text;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+// --- Balance ---
+$("btnBalance").onclick = async () => {
+  const out = $("outBalance");
+  out.classList.remove("err");
+  out.textContent = "Consultando…";
+  try {
+    const d = await call({ key: getKey(), action: "balance" });
+    out.textContent = d.balance !== undefined
+      ? `Balance: ${d.balance} ${d.currency || ""}`.trim()
+      : JSON.stringify(d, null, 2);
+  } catch (e) {
+    out.classList.add("err");
+    out.textContent = "Error: " + e.message;
+  }
+};
+
+// --- Servicios ---
+let allServices = [];
+$("btnServices").onclick = async () => {
+  const errBox = $("outServices");
+  errBox.style.display = "none";
+  $("svcCount").textContent = "Cargando…";
+  try {
+    const d = await call({ key: getKey(), action: "services" });
+    if (!Array.isArray(d)) throw new Error(typeof d === "object" ? JSON.stringify(d) : d);
+    allServices = d;
+    renderServices();
+  } catch (e) {
+    $("svcCount").textContent = "";
+    $("svcWrap").style.display = "none";
+    errBox.style.display = "block";
+    errBox.textContent = "Error: " + e.message;
+  }
+};
+// IDs que me indicaste, agrupados.
+const GROUPS = {
+  likes: [21472, 21473, 21474, 21475, 21476, 21477],
+  saves: [20374, 20375],
+  comments: [20744, 20745, 20746],
+};
+let activeGroup = "all";
+
+$("filter").oninput = renderServices;
+$("chips").addEventListener("click", (e) => {
+  const btn = e.target.closest(".chip");
+  if (!btn) return;
+  activeGroup = btn.dataset.group;
+  document.querySelectorAll(".chip").forEach((c) => c.classList.toggle("active", c === btn));
+  renderServices();
+});
+
+function renderServices() {
+  const q = $("filter").value.trim().toLowerCase();
+  let list = allServices;
+  if (activeGroup !== "all") {
+    const ids = new Set(GROUPS[activeGroup]);
+    list = list.filter((s) => ids.has(Number(s.service)));
+  }
+  if (q) {
+    list = list.filter((s) =>
+      String(s.service).includes(q) ||
+      (s.name || "").toLowerCase().includes(q) ||
+      (s.category || "").toLowerCase().includes(q)
+    );
+  }
+  const groupLabel = activeGroup === "all" ? "" : ` · grupo "${activeGroup}"`;
+  $("svcCount").textContent = `${list.length} de ${allServices.length} servicios${groupLabel}`;
+  populateServiceSelects();
+  $("svcWrap").style.display = list.length ? "block" : "none";
+  $("svcBody").innerHTML = list.map((s) => `
+    <tr>
+      <td class="id">${s.service}</td>
+      <td>${esc(s.name)}</td>
+      <td>${esc(s.category)}</td>
+      <td>${esc(s.type)}</td>
+      <td>${esc(s.rate)}</td>
+      <td>${esc(s.min)}</td>
+      <td>${esc(s.max)}</td>
+    </tr>`).join("");
+}
+function esc(v) {
+  return String(v ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
+
+// --- Estado de orden ---
+$("btnStatus").onclick = async () => {
+  const out = $("outStatus");
+  out.classList.remove("err");
+  const ids = $("orderIds").value.trim();
+  if (!ids) { out.textContent = "Escribe al menos un ID de orden."; return; }
+  out.textContent = "Consultando…";
+  try {
+    const multiple = ids.includes(",");
+    const params = { key: getKey(), action: "status" };
+    if (multiple) params.orders = ids.replace(/\s+/g, "");
+    else params.order = ids;
+    const d = await call(params);
+    out.textContent = JSON.stringify(d, null, 2);
+  } catch (e) {
+    out.classList.add("err");
+    out.textContent = "Error: " + e.message;
+  }
+};
+
+// --- Modal de confirmación propio ---
+const modalEl = $("modalOverlay");
+let modalResolve = null;
+function confirmModal({ title = "Confirmar", body = "", okText = "Confirmar", danger = false } = {}) {
+  $("modalTitle").textContent = title;
+  $("modalBody").innerHTML = body;
+  const ok = $("modalOk");
+  ok.textContent = okText;
+  ok.classList.toggle("danger", !!danger);
+  modalEl.classList.add("show");
+  setTimeout(() => ok.focus(), 0);
+  return new Promise((resolve) => { modalResolve = resolve; });
+}
+function closeModal(val) {
+  modalEl.classList.remove("show");
+  if (modalResolve) { modalResolve(val); modalResolve = null; }
+}
+$("modalOk").onclick = () => closeModal(true);
+$("modalCancel").onclick = () => closeModal(false);
+modalEl.addEventListener("click", (e) => { if (e.target === modalEl) closeModal(false); });
+document.addEventListener("keydown", (e) => {
+  if (!modalEl.classList.contains("show")) return;
+  if (e.key === "Escape") closeModal(false);
+  else if (e.key === "Enter") closeModal(true);
+});
+
+// --- Órdenes recientes (persistidas en este navegador) ---
+const RECENT_STORE = "smmworld_recent_orders";
+const FAIL_WINDOW = 24 * 60 * 60 * 1000; // 24 h
+const TYPE_LABEL = { comments: "Coment.", likes: "Likes", saves: "Saves" };
+const TYPE_UNIT = { comments: "coment.", likes: "likes", saves: "saves" };
+
+function loadRecent() {
+  try { return JSON.parse(localStorage.getItem(RECENT_STORE)) || []; }
+  catch { return []; }
+}
+function saveRecent(list) { localStorage.setItem(RECENT_STORE, JSON.stringify(list)); }
+function rid() { return Date.now() + "-" + Math.random().toString(36).slice(2, 8); }
+
+// Servicios marcados ✗ en las últimas 24 h.
+function failingSet() {
+  const now = Date.now();
+  const set = new Set();
+  for (const r of loadRecent()) {
+    if (r.ok === false && r.okTs && now - r.okTs < FAIL_WINDOW) set.add(Number(r.service));
+  }
+  return set;
+}
+function relTime(ts) {
+  const s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return `hace ${s}s`;
+  const m = Math.floor(s / 60); if (m < 60) return `hace ${m}m`;
+  const h = Math.floor(m / 60); if (h < 24) return `hace ${h}h`;
+  return `hace ${Math.floor(h / 24)}d`;
+}
+function addRecent(rec) {
+  const list = loadRecent();
+  list.unshift({ id: rid(), ts: Date.now(), ok: null, okTs: 0, ...rec });
+  saveRecent(list.slice(0, 50));
+  renderRecent();
+}
+function renderRecent() {
+  const fset = failingSet();
+  const list = loadRecent();
+  const box = $("recentList");
+  if (!list.length) {
+    box.innerHTML = `<div class="empty">Aún no has colocado órdenes.</div>`;
+  } else {
+    box.innerHTML = list.map((r) => {
+      const failing = fset.has(Number(r.service));
+      return `<div class="ritem ${failing ? "failing" : ""}" data-id="${esc(r.id)}">
+        <div class="rtop">
+          <span class="rtype ${r.type}">${TYPE_LABEL[r.type] || r.type}</span>
+          <span class="rwhen">${relTime(r.ts)}</span>
+        </div>
+        <div class="rbody">Servicio <b>${esc(r.service)}</b> · ${esc(r.count)} ${TYPE_UNIT[r.type] || ""}</div>
+        ${r.order ? `<div class="rorder">orden #${esc(r.order)}</div>` : ""}
+        <div class="ractions">
+          <button class="mk ok ${r.ok === true ? "active" : ""}" data-act="ok" type="button">✓ Funcionó</button>
+          <button class="mk no ${r.ok === false ? "active" : ""}" data-act="no" type="button">✗ Falló</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  populateServiceSelects();
+  updateServiceWarnings();
+}
+$("recentList").addEventListener("click", (e) => {
+  const btn = e.target.closest(".mk");
+  if (!btn) return;
+  const id = btn.closest(".ritem")?.dataset.id;
+  const list = loadRecent();
+  const r = list.find((x) => x.id === id);
+  if (!r) return;
+  const val = btn.dataset.act === "ok";
+  r.ok = r.ok === val ? null : val; // segundo clic en el mismo: quita la marca
+  r.okTs = Date.now();
+  saveRecent(list);
+  renderRecent();
+});
+$("btnClearRecent").onclick = async () => {
+  if (!loadRecent().length) return;
+  const ok = await confirmModal({
+    title: "Limpiar historial",
+    body: "¿Borrar todo el historial de órdenes recientes? Esto también quita los resaltados en rojo.",
+    okText: "Borrar", danger: true,
+  });
+  if (ok) { saveRecent([]); renderRecent(); }
+};
+
+// --- Selectores de servicio (con resaltado de fallidos) ---
+const SERVICE_SELECTS = { comments: "cmtService", likes: "likeService", saves: "saveService" };
+
+function ensureWarn(sel) {
+  let w = sel.nextElementSibling;
+  if (!w || !w.classList.contains("svc-warn")) {
+    w = document.createElement("div");
+    w.className = "svc-warn";
+    sel.parentNode.insertBefore(w, sel.nextSibling);
+  }
+  return w;
+}
+function updateServiceWarnings() {
+  const fset = failingSet();
+  for (const selId of Object.values(SERVICE_SELECTS)) {
+    const sel = $(selId);
+    if (!sel) continue;
+    const w = ensureWarn(sel);
+    if (fset.has(Number(sel.value))) {
+      w.textContent = "⚠ Este servicio se marcó como fallido en las últimas 24 h.";
+      w.style.display = "block";
+    } else {
+      w.style.display = "none";
+    }
+  }
+}
+function populateServiceSelects() {
+  const byId = new Map(allServices.map((s) => [Number(s.service), s]));
+  const fset = failingSet();
+  for (const [group, selId] of Object.entries(SERVICE_SELECTS)) {
+    const sel = $(selId);
+    if (!sel) continue;
+    const prev = sel.value;
+    sel.innerHTML = GROUPS[group].map((id) => {
+      const s = byId.get(id);
+      const base = s ? `${id} — ${s.name} (rate ${s.rate})` : `${id}`;
+      const label = (fset.has(id) ? "🔴 " : "") + base;
+      return `<option value="${id}">${esc(label)}</option>`;
+    }).join("");
+    if (prev) sel.value = prev;
+    sel.onchange = updateServiceWarnings;
+  }
+}
+
+async function placeOrder(out, params, summary, meta) {
+  out.classList.remove("err");
+  const ok = await confirmModal({
+    title: "Confirmar orden",
+    body: `Vas a colocar una <b>orden real</b> que consume tu balance:<br><br>${esc(summary)}`,
+    okText: "Colocar orden", danger: true,
+  });
+  if (!ok) { out.textContent = "Cancelado."; return; }
+  out.textContent = "Enviando…";
+  try {
+    const d = await call({ key: getKey(), action: "add", ...params });
+    if (d && d.error) {
+      out.classList.add("err");
+      out.textContent = "Error API: " + d.error;
+    } else if (d && d.order) {
+      out.textContent = `✓ Orden creada — ID: ${d.order}\n` + JSON.stringify(d, null, 2);
+      if (meta) addRecent({ ...meta, order: d.order });
+    } else {
+      out.textContent = JSON.stringify(d, null, 2);
+    }
+  } catch (e) {
+    out.classList.add("err");
+    out.textContent = "Error: " + e.message;
+  }
+}
+
+renderRecent(); // pinta la lista y rellena selectores al cargar
+
+// Enlace común (compartido por las 3 cards, persistido en este navegador)
+const LINK_STORE = "smmworld_order_link";
+const linkInput = $("orderLink");
+linkInput.value = localStorage.getItem(LINK_STORE) || "";
+linkInput.oninput = () => localStorage.setItem(LINK_STORE, linkInput.value.trim());
+function getLink(out) {
+  const link = linkInput.value.trim();
+  if (!link) { out.textContent = "Falta el enlace del post (card 4)."; return null; }
+  return link;
+}
+
+// Listas de comentarios con título (persistidas en este navegador)
+const LISTS_STORE = "smmworld_comment_lists";
+function loadLists() {
+  try { return JSON.parse(localStorage.getItem(LISTS_STORE)) || {}; }
+  catch { return {}; }
+}
+function saveLists(lists) { localStorage.setItem(LISTS_STORE, JSON.stringify(lists)); }
+function refreshListSelect(selected) {
+  const lists = loadLists();
+  const names = Object.keys(lists).sort((a, b) => a.localeCompare(b));
+  $("cmtLists").innerHTML = `<option value="">— ninguna —</option>` +
+    names.map((n) => `<option value="${esc(n)}">${esc(n)} (${lists[n].split("\n").filter(Boolean).length})</option>`).join("");
+  if (selected && names.includes(selected)) $("cmtLists").value = selected;
+}
+refreshListSelect();
+
+$("btnSaveList").onclick = () => {
+  const out = $("outComments");
+  out.classList.remove("err");
+  const name = $("cmtListName").value.trim();
+  const text = $("cmtText").value.replace(/\s+$/g, "");
+  if (!name) { out.textContent = "Escribe un título para la lista."; return; }
+  if (!text.trim()) { out.textContent = "El área de comentarios está vacía."; return; }
+  const lists = loadLists();
+  if (lists[name] && !confirm(`Ya existe una lista "${name}". ¿Sobrescribir?`)) return;
+  lists[name] = text;
+  saveLists(lists);
+  refreshListSelect(name);
+  out.textContent = `Lista "${name}" guardada ✓`;
+};
+$("btnLoadList").onclick = () => {
+  const out = $("outComments");
+  out.classList.remove("err");
+  const name = $("cmtLists").value;
+  if (!name) { out.textContent = "Elige una lista guardada."; return; }
+  const lists = loadLists();
+  $("cmtText").value = lists[name] || "";
+  $("cmtListName").value = name;
+  $("cmtText").dispatchEvent(new Event("input"));
+  out.textContent = `Lista "${name}" cargada.`;
+};
+$("btnDeleteList").onclick = () => {
+  const out = $("outComments");
+  out.classList.remove("err");
+  const name = $("cmtLists").value;
+  if (!name) { out.textContent = "Elige una lista guardada."; return; }
+  if (!confirm(`¿Borrar la lista "${name}"?`)) return;
+  const lists = loadLists();
+  delete lists[name];
+  saveLists(lists);
+  refreshListSelect();
+  out.textContent = `Lista "${name}" borrada.`;
+};
+
+// Comentarios (uno por línea)
+$("cmtText").oninput = () => {
+  const n = $("cmtText").value.split("\n").map((s) => s.trim()).filter(Boolean).length;
+  $("cmtCount").textContent = `${n} comentario${n === 1 ? "" : "s"}`;
+};
+$("btnComments").onclick = () => {
+  const out = $("outComments");
+  out.classList.remove("err");
+  const service = $("cmtService").value;
+  const link = getLink(out);
+  if (!link) return;
+  const lines = $("cmtText").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  if (!lines.length) { out.textContent = "Escribe al menos un comentario."; return; }
+  placeOrder(out, { service, link, comments: lines.join("\n") },
+    `Servicio ${service} · ${lines.length} comentarios · ${link}`,
+    { type: "comments", service, count: lines.length, link });
+};
+
+// Likes (cantidad)
+$("btnLikes").onclick = () => {
+  const out = $("outLikes");
+  out.classList.remove("err");
+  const service = $("likeService").value;
+  const link = getLink(out);
+  if (!link) return;
+  const qty = parseInt($("likeQty").value, 10);
+  if (!qty || qty < 1) { out.textContent = "Cantidad inválida."; return; }
+  placeOrder(out, { service, link, quantity: qty },
+    `Servicio ${service} · ${qty} likes · ${link}`,
+    { type: "likes", service, count: qty, link });
+};
+
+// Saves (cantidad)
+$("btnSaves").onclick = () => {
+  const out = $("outSaves");
+  out.classList.remove("err");
+  const service = $("saveService").value;
+  const link = getLink(out);
+  if (!link) return;
+  const qty = parseInt($("saveQty").value, 10);
+  if (!qty || qty < 1) { out.textContent = "Cantidad inválida."; return; }
+  placeOrder(out, { service, link, quantity: qty },
+    `Servicio ${service} · ${qty} saves · ${link}`,
+    { type: "saves", service, count: qty, link });
+};
+</script>
+</body>
+</html>
