@@ -1,5 +1,5 @@
 # Secretos / configuración local (contiene tu API key y contraseña)
-config.json
+
 
 # Dependencias
 node_modules/
