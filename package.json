@@ -1,0 +1,13 @@
+{
+  "name": "panel-smm",
+  "version": "1.0.0",
+  "description": "Panel de API de SMM World (comentarios, likes, saves)",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

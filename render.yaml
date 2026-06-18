@@ -1,0 +1,15 @@
+# Blueprint de Render. Importa el repo desde el dashboard y detecta este archivo.
+# Las claves NO van aquí: se piden en el dashboard (sync: false) y se guardan como
+# variables de entorno, así nunca llegan al repositorio.
+services:
+  - type: web
+    name: panel-smm
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: SMM_KEY
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
